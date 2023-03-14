@@ -434,7 +434,7 @@ END(irq_entries_start)
 	TRACE_IRQS_OFF
 
 	CALL_enter_from_user_mode
-	jmp	2f
+	jmpq	2f
 1:
 	FENCE_SWAPGS_KERNEL_ENTRY
 2:

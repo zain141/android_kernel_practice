@@ -1105,9 +1105,10 @@ static rx_handler_result_t macsec_handle_frame(struct sk_buff **pskb)
 	}
 
 	skb = skb_unshare(skb, GFP_ATOMIC);
-	*pskb = skb;
-	if (!skb)
+	if (!skb) {
+		*pskb = NULL;
 		return RX_HANDLER_CONSUMED;
+	}
 
 	pulled_sci = pskb_may_pull(skb, macsec_extra_len(true));
 	if (!pulled_sci) {

@@ -208,6 +208,7 @@ static int __init siphash_test_init(void)
 		pr_info("hsiphash self-test 4u32: FAIL\n");
 		ret = -EINVAL;
 	}
+
 	if (!ret)
 		pr_info("self-tests: pass\n");
 	return ret;

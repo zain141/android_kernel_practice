@@ -52,7 +52,6 @@ static const u64 test_vectors_siphash[64] = {
 	0x958a324ceb064572ULL
 };
 
-
 #if BITS_PER_LONG == 64
 static const hsiphash_key_t test_key_hsiphash =
 	{{ 0x0706050403020100ULL, 0x0f0e0d0c0b0a0908ULL }};
@@ -208,7 +207,6 @@ static int __init siphash_test_init(void)
 		pr_info("hsiphash self-test 4u32: FAIL\n");
 		ret = -EINVAL;
 	}
-
 	if (!ret)
 		pr_info("self-tests: pass\n");
 	return ret;

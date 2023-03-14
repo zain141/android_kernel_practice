@@ -193,23 +193,10 @@ static void mt7601u_complete_rx(struct urb *urb)
 	struct mt7601u_rx_queue *q = &dev->rx_q;
 	unsigned long flags;
 
-	/* do no schedule rx tasklet if urb has been unlinked
-	 * or the device has been removed
-	 */
-	switch (urb->status) {
-	case -ECONNRESET:
-	case -ESHUTDOWN:
-	case -ENOENT:
-		return;
-	default:
-		dev_err_ratelimited(dev->dev, "rx urb failed: %d\n",
-				    urb->status);
-		/* fall through */
-	case 0:
-		break;
-	}
-
 	spin_lock_irqsave(&dev->rx_lock, flags);
+
+	if (mt7601u_urb_has_error(urb))
+		dev_err(dev->dev, "Error: RX urb failed:%d\n", urb->status);
 	if (WARN_ONCE(q->e[q->end].urb != urb, "RX urb mismatch"))
 		goto out;
 
@@ -376,9 +363,19 @@ int mt7601u_dma_enqueue_tx(struct mt7601u_dev *dev, struct sk_buff *skb,
 static void mt7601u_kill_rx(struct mt7601u_dev *dev)
 {
 	int i;
+	unsigned long flags;
 
-	for (i = 0; i < dev->rx_q.entries; i++)
-		usb_poison_urb(dev->rx_q.e[i].urb);
+	spin_lock_irqsave(&dev->rx_lock, flags);
+
+	for (i = 0; i < dev->rx_q.entries; i++) {
+		int next = dev->rx_q.end;
+
+		spin_unlock_irqrestore(&dev->rx_lock, flags);
+		usb_poison_urb(dev->rx_q.e[next].urb);
+		spin_lock_irqsave(&dev->rx_lock, flags);
+	}
+
+	spin_unlock_irqrestore(&dev->rx_lock, flags);
 }
 
 static int mt7601u_submit_rx_buf(struct mt7601u_dev *dev,

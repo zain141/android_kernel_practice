@@ -1205,7 +1205,7 @@ static ssize_t l1tf_show_state(char *buf)
 static ssize_t mds_show_state(char *buf)
 {
 #ifdef CONFIG_HYPERVISOR_GUEST
-	if (boot_cpu_has(X86_FEATURE_HYPERVISOR)) {
+	if (x86_hyper) {
 		return sprintf(buf, "%s; SMT Host state unknown\n",
 			       mds_strings[mds_mitigation]);
 	}

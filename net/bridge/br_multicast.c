@@ -1036,7 +1036,6 @@ static int br_ip4_multicast_igmp3_report(struct net_bridge *br,
 	int type;
 	int err = 0;
 	__be32 group;
-	u16 nsrcs;
 
 	ih = igmpv3_report_hdr(skb);
 	num = ntohs(ih->ngrec);
@@ -1050,9 +1049,8 @@ static int br_ip4_multicast_igmp3_report(struct net_bridge *br,
 		grec = (void *)(skb->data + len - sizeof(*grec));
 		group = grec->grec_mca;
 		type = grec->grec_type;
-		nsrcs = ntohs(grec->grec_nsrcs);
 
-		len += nsrcs * 4;
+		len += ntohs(grec->grec_nsrcs) * 4;
 		if (!pskb_may_pull(skb, len))
 			return -EINVAL;
 
@@ -1072,7 +1070,7 @@ static int br_ip4_multicast_igmp3_report(struct net_bridge *br,
 
 		if ((type == IGMPV3_CHANGE_TO_INCLUDE ||
 		     type == IGMPV3_MODE_IS_INCLUDE) &&
-		    nsrcs == 0) {
+		    ntohs(grec->grec_nsrcs) == 0) {
 			br_ip4_multicast_leave_group(br, port, group, vid);
 		} else {
 			err = br_ip4_multicast_add_group(br, port, group, vid);
@@ -1105,26 +1103,23 @@ static int br_ip6_multicast_mld2_report(struct net_bridge *br,
 	len = skb_transport_offset(skb) + sizeof(*icmp6h);
 
 	for (i = 0; i < num; i++) {
-		__be16 *_nsrcs, __nsrcs;
-		u16 nsrcs;
+		__be16 *nsrcs, _nsrcs;
 
-		_nsrcs = skb_header_pointer(skb,
-					    len + offsetof(struct mld2_grec,
-							   grec_nsrcs),
-					    sizeof(__nsrcs), &__nsrcs);
-		if (!_nsrcs)
+		nsrcs = skb_header_pointer(skb,
+					   len + offsetof(struct mld2_grec,
+							  grec_nsrcs),
+					   sizeof(_nsrcs), &_nsrcs);
+		if (!nsrcs)
 			return -EINVAL;
-
-		nsrcs = ntohs(*_nsrcs);
 
 		if (!pskb_may_pull(skb,
 				   len + sizeof(*grec) +
-				   sizeof(struct in6_addr) * nsrcs))
+				   sizeof(struct in6_addr) * ntohs(*nsrcs)))
 			return -EINVAL;
 
 		grec = (struct mld2_grec *)(skb->data + len);
 		len += sizeof(*grec) +
-		       sizeof(struct in6_addr) * nsrcs;
+		       sizeof(struct in6_addr) * ntohs(*nsrcs);
 
 		/* We treat these as MLDv1 reports for now. */
 		switch (grec->grec_type) {
@@ -1142,7 +1137,7 @@ static int br_ip6_multicast_mld2_report(struct net_bridge *br,
 
 		if ((grec->grec_type == MLD2_CHANGE_TO_INCLUDE ||
 		     grec->grec_type == MLD2_MODE_IS_INCLUDE) &&
-		    nsrcs == 0) {
+		    ntohs(*nsrcs) == 0) {
 			br_ip6_multicast_leave_group(br, port, &grec->grec_mca,
 						     vid);
 		} else {

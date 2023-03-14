@@ -490,9 +490,8 @@ static long media_device_enum_links32(struct media_device *mdev,
 	if (ret)
 		return ret;
 
-	if (copy_to_user(ulinks->reserved, links.reserved,
-			 sizeof(ulinks->reserved)))
-		return -EFAULT;
+	memset(ulinks->reserved, 0, sizeof(ulinks->reserved));
+
 	return 0;
 }
 
